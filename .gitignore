@@ -1,4 +1,4 @@
 *.env
-./prompt.txt
-./.vscode
-./__pycache__
+prompt.txt
+.vscode/
+__pycache__/
