@@ -4,25 +4,13 @@ import os
 import openai
 import re
 
-from typing import Final 
 from ChatGPT import *
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 BOT_USERNAME = os.getenv("BOT_USERNAME")
 openai.api_key = os.getenv("OPENAI_API_KEY")
-
-# Commands
-async def startCommand (update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("I am James!")
-
-async def helpCommand (update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Please type something else")
-
-async def customCommand (update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Custom Command!")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_type: str = update.message.chat.type
@@ -35,14 +23,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if BOT_USERNAME in text:
             # Remove name from message
             new_text: str = text.replace(BOT_USERNAME, '').strip() 
-            # response: str = handle_response(new_text)
             chatgpt_response = get_response(new_text)
             response = chatgpt_response.choices[0].message.content
         else: 
             return
     else: 
         # in a private message there will be no name in the message
-        # response: str = handle_response(text)
         chatgpt_response = get_response(text)
         response = chatgpt_response.choices[0].message.content
 
@@ -53,7 +39,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     split_response = [token for token in split_response if token]
     for text in split_response:
         await update.message.reply_text(text.lower().replace('.',''))
-    # await update.message.reply_text(response.lower().replace('.','').replace(',',''))
 
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f'Update {update} caused error {context.error}')
