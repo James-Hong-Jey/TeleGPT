@@ -3,14 +3,25 @@ load_dotenv()
 import os
 import openai
 import re
+import emoji
 
 from ChatGPT import *
 from telegram import Update
+from telegram import Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 BOT_USERNAME = os.getenv("BOT_USERNAME")
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
+def webhook(request):
+    bot = Bot(token=os.environ["TELEGRAM_TOKEN"])
+    if request.method == "POST":
+        update = Update.de_json(request.get_json(force=True), bot)
+        chat_id = update.message.chat.id
+        # Reply with the same message
+        bot.sendMessage(chat_id=chat_id, text=update.message.text)
+    return "ok"
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_type: str = update.message.chat.type
@@ -35,7 +46,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print('Bot: ', response, ' (Using ', chatgpt_response.usage.total_tokens, ')')
     
     # Split by punctuation, so no punctuation + lower + split up
-    split_response = re.split(r'[,.!?]+', response)
+    emojiless_response = emoji.replace_emoji(response, replace='')
+    split_response = re.split(r'[,.!?]+', emojiless_response)
     split_response = [token for token in split_response if token]
     for text in split_response:
         await update.message.reply_text(text.lower().replace('.',''))
@@ -46,11 +58,6 @@ async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if __name__ == '__main__':
     print('Starting Bot..')
     app = Application.builder().token(TOKEN).build()
-    
-    # Commands
-    app.add_handler(CommandHandler('start', startCommand))
-    app.add_handler(CommandHandler('help', helpCommand))
-    app.add_handler(CommandHandler('custom', customCommand))
 
     # Messages
     app.add_handler(MessageHandler(filters.TEXT, handle_message))
@@ -61,5 +68,3 @@ if __name__ == '__main__':
     # Polling
     print('Polling..')
     app.run_polling(poll_interval=3) # Polls every 3 seconds
-
-    
