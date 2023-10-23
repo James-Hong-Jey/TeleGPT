@@ -5,44 +5,81 @@ import openai
 import re
 import emoji
 
+import ChatGPT
 from ChatGPT import *
+from telegram import ReplyKeyboardMarkup
 from telegram import Update
-from telegram import Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 BOT_USERNAME = os.getenv("BOT_USERNAME")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-def webhook(request):
-    bot = Bot(token=os.environ["TELEGRAM_TOKEN"])
-    if request.method == "POST":
-        update = Update.de_json(request.get_json(force=True), bot)
-        chat_id = update.message.chat.id
-        # Reply with the same message
-        bot.sendMessage(chat_id=chat_id, text=update.message.text)
-    return "ok"
+async def personaCommand (update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [["/normal", "/malay", "/english", "/chinese"]]
+    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+    await update.message.reply_text("Select a language: ", reply_markup=reply_markup)
+
+async def malay (update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("You selected Malay")
+    context.user_data['persona'] = 'malay'
+
+async def english (update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("You selected English")
+    context.user_data['persona'] = 'normal'
+    
+async def chinese (update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("You selected Chinese")
+    context.user_data['persona'] = 'chinese'
+    
+async def modelNameCommand (update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [["/good", "/chat", "/big"]]
+    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+    await update.message.reply_text("Select a Model to use: ", reply_markup=reply_markup)
+
+async def good (update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("You selected Good (GPT-4)")
+    context.user_data['modelName'] = 'good'
+
+async def chat (update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("You selected Chat (GPT-3.5-Turbo)")
+    context.user_data['modelName'] = 'chat'
+
+async def big (update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("You selected Chat (GPT-3.5-Turbo-16k)")
+    context.user_data['modelName'] = 'big'
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if 'persona' not in context.user_data:
+        context.user_data['persona'] = 'normal'
+    if 'modelName' not in context.user_data:
+        context.user_data['modelName'] = 'chat'
     message_type: str = update.message.chat.type
     text: str = update.message.text
 
     print(f'User ({update.message.chat.id}) in {message_type}: "{text}"')
+
+    # Authorised Users Only
+    username: str = update.message.from_user.username
+    allowed_usernames = ["jeysiao", "yuyufrog"]
+    if username not in allowed_usernames:
+        await update.message.reply_text("Unauthorised user")
+        return
 
     # Check if user is in group or private message
     if message_type == 'group':
         if BOT_USERNAME in text:
             # Remove name from message
             new_text: str = text.replace(BOT_USERNAME, '').strip() 
-            chatgpt_response = get_response(new_text)
+            chatgpt_response = get_response(new_text, context.user_data['persona'], context.user_data['modelName'])
             response = chatgpt_response.choices[0].message.content
         else: 
             return
     else: 
         # in a private message there will be no name in the message
-        chatgpt_response = get_response(text)
+        chatgpt_response = get_response(text, context.user_data['persona'], context.user_data['modelName'])
         response = chatgpt_response.choices[0].message.content
-
+        
     print('Bot: ', response, ' (Using ', chatgpt_response.usage.total_tokens, ')')
     
     # Split by punctuation, so no punctuation + lower + split up
@@ -53,11 +90,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(text.lower().replace('.',''))
 
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(f'Update {update} caused error {context.error}')
+    print(f'Update "{update.message.text}" caused error "{context.error}"')
 
 if __name__ == '__main__':
     print('Starting Bot..')
     app = Application.builder().token(TOKEN).build()
+
+    # Commands
+    app.add_handler(CommandHandler('persona', personaCommand))
+    app.add_handler(CommandHandler('malay', malay))
+    app.add_handler(CommandHandler('english', english))
+    app.add_handler(CommandHandler('chinese', chinese))
+
+    app.add_handler(CommandHandler('modelName', modelNameCommand))
+    app.add_handler(CommandHandler('good', good))
+    app.add_handler(CommandHandler('chat', chat))
+    app.add_handler(CommandHandler('big', big))
 
     # Messages
     app.add_handler(MessageHandler(filters.TEXT, handle_message))
@@ -67,4 +115,4 @@ if __name__ == '__main__':
 
     # Polling
     print('Polling..')
-    app.run_polling(poll_interval=3) # Polls every 3 seconds
+    app.run_polling(poll_interval=1) # Polls every x seconds

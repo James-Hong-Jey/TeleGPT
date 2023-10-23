@@ -1,6 +1,7 @@
 .env
 prompt.txt
 altPrompt.txt
+altPrompt-j.txt
 .vscode/
 __pycache__/
 draft.py
