@@ -16,7 +16,7 @@ BOT_USERNAME = os.getenv("BOT_USERNAME")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 async def personaCommand (update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [["/normal", "/malay", "/english", "/chinese"]]
+    keyboard = [["/normal", "/malay", "/chinese"]]
     reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
     await update.message.reply_text("Select a language: ", reply_markup=reply_markup)
 
@@ -24,8 +24,8 @@ async def malay (update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("You selected Malay")
     context.user_data['persona'] = 'malay'
 
-async def english (update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("You selected English")
+async def normal (update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("You selected Normal")
     context.user_data['persona'] = 'normal'
     
 async def chinese (update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -99,10 +99,10 @@ if __name__ == '__main__':
     # Commands
     app.add_handler(CommandHandler('persona', personaCommand))
     app.add_handler(CommandHandler('malay', malay))
-    app.add_handler(CommandHandler('english', english))
+    app.add_handler(CommandHandler('normal', normal))
     app.add_handler(CommandHandler('chinese', chinese))
 
-    app.add_handler(CommandHandler('modelName', modelNameCommand))
+    app.add_handler(CommandHandler('modelname', modelNameCommand))
     app.add_handler(CommandHandler('good', good))
     app.add_handler(CommandHandler('chat', chat))
     app.add_handler(CommandHandler('big', big))
