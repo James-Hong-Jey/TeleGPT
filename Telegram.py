@@ -5,8 +5,8 @@ import openai
 import re
 import emoji
 
-import ChatGPT
 from ChatGPT import *
+from Dalle import *
 from telegram import ReplyKeyboardMarkup
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
@@ -31,6 +31,11 @@ async def normal (update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def chinese (update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("You selected Chinese")
     context.user_data['persona'] = 'chinese'
+
+async def image (update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_prompt = update.message.text.split('/image ')[1]
+    dalle_response = get_image(user_prompt)
+    await update.message.reply_photo(dalle_response)
     
 async def modelNameCommand (update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [["/good", "/chat", "/big"]]
@@ -106,6 +111,7 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler('good', good))
     app.add_handler(CommandHandler('chat', chat))
     app.add_handler(CommandHandler('big', big))
+    app.add_handler(CommandHandler('image', image))
 
     # Messages
     app.add_handler(MessageHandler(filters.TEXT, handle_message))
