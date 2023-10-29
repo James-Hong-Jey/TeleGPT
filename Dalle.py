@@ -6,8 +6,8 @@ def get_image(user_prompt):
     n=1,
     size="1024x1024"
     )
-    image_url = dalle_response['data'][0]['url']
-    print(image_url)
+    image_url = response['data'][0]['url']
+    print("Image returned")
     return image_url
 
 # response = openai.Image.create_edit(

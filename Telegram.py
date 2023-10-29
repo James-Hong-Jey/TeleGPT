@@ -34,6 +34,7 @@ async def chinese (update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def image (update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_prompt = update.message.text.split('/image ')[1]
+    print(f'User ({update.message.chat.active_usernames}) requested: "{user_prompt}"')
     dalle_response = get_image(user_prompt)
     await update.message.reply_photo(dalle_response)
     
