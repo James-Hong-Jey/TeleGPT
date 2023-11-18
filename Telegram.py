@@ -33,27 +33,35 @@ async def chinese (update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['persona'] = 'chinese'
 
 async def image (update: Update, context: ContextTypes.DEFAULT_TYPE):
+    raw = False
+    all = False
     user_prompt = update.message.text.split('/image ')[1]
-    print(f'User ({update.message.chat.active_usernames}) requested: "{user_prompt}"')
+    # Clean
+    if(user_prompt == ""): return
+
+    # Check for all flag
+    if "-all " in user_prompt:
+        all = True
+        user_prompt = user_prompt.replace("-all ","")
+
+    ## Check for raw flag
+    if "-raw " in user_prompt:
+        print("Making prompt more user specific:")
+        raw = True
+        user_prompt = user_prompt.replace("-raw ","")
+
+    print(f'User ({update.message.from_user.first_name}) requested: "{user_prompt}"')
+    if raw:
+        user_prompt = "I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS:" + user_prompt
     dalle_response = get_image(user_prompt)
-    await update.message.reply_photo(dalle_response)
-    
-async def modelNameCommand (update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [["/good", "/chat", "/big"]]
-    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
-    await update.message.reply_text("Select a Model to use: ", reply_markup=reply_markup)
+    image_url = dalle_response['data'][0]['url']
+    revised_prompt = dalle_response['data'][0]['revised_prompt'] if all else ""
+    print(image_url)
+    print(revised_prompt)
+    await update.message.reply_photo(photo=image_url, caption=revised_prompt)
 
-async def good (update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("You selected Good (GPT-4)")
-    context.user_data['modelName'] = 'good'
-
-async def chat (update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("You selected Chat (GPT-3.5-Turbo)")
-    context.user_data['modelName'] = 'chat'
-
-async def big (update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("You selected Chat (GPT-3.5-Turbo-16k)")
-    context.user_data['modelName'] = 'big'
+async def ping (update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("pong")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if 'persona' not in context.user_data:
@@ -63,28 +71,27 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_type: str = update.message.chat.type
     text: str = update.message.text
 
-    print(f'User ({update.message.chat.id}) in {message_type}: "{text}"')
+    print(f'User ({update.message.from_user.first_name}) in {message_type}: "{text}"')
 
     # Authorised Users Only
     username: str = update.message.from_user.username
     allowed_usernames = ["jeysiao", "yuyufrog"]
     if username not in allowed_usernames:
-        await update.message.reply_text("Unauthorised user")
+        await update.message.reply_text("Unauthorised User")
         return
 
     # Check if user is in group or private message
-    if message_type == 'group':
-        if BOT_USERNAME in text:
-            # Remove name from message
-            new_text: str = text.replace(BOT_USERNAME, '').strip() 
-            chatgpt_response = get_response(new_text, context.user_data['persona'], context.user_data['modelName'])
-            response = chatgpt_response.choices[0].message.content
-        else: 
-            return
-    else: 
-        # in a private message there will be no name in the message
+    if message_type == 'private':
         chatgpt_response = get_response(text, context.user_data['persona'], context.user_data['modelName'])
         response = chatgpt_response.choices[0].message.content
+    else: 
+        # # Remove name from message
+        # if BOT_USERNAME in text:
+            # new_text: str = text.replace(BOT_USERNAME, '').strip() 
+            # chatgpt_response = get_response(new_text, context.user_data['persona'], context.user_data['modelName'])
+            # response = chatgpt_response.choices[0].message.content
+        # else: 
+        return
         
     print('Bot: ', response, ' (Using ', chatgpt_response.usage.total_tokens, ')')
     
@@ -97,6 +104,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f'Update "{update.message.text}" caused error "{context.error}"')
+    # await update.message.reply_text(context.error)
 
 if __name__ == '__main__':
     print('Starting Bot..')
@@ -108,11 +116,9 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler('normal', normal))
     app.add_handler(CommandHandler('chinese', chinese))
 
-    app.add_handler(CommandHandler('modelname', modelNameCommand))
-    app.add_handler(CommandHandler('good', good))
-    app.add_handler(CommandHandler('chat', chat))
-    app.add_handler(CommandHandler('big', big))
     app.add_handler(CommandHandler('image', image))
+
+    app.add_handler(CommandHandler('ping', ping))
 
     # Messages
     app.add_handler(MessageHandler(filters.TEXT, handle_message))

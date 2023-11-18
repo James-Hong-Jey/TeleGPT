@@ -2,13 +2,13 @@ import openai
 
 def get_image(user_prompt):
     response = openai.Image.create(
+    model="dall-e-3",
     prompt=user_prompt,
     n=1,
     size="1024x1024"
     )
-    image_url = response['data'][0]['url']
     print("Image returned")
-    return image_url
+    return response
 
 # response = openai.Image.create_edit(
   # image=open("sunlit_lounge.png", "rb"),
