@@ -50,9 +50,14 @@ async def image (update: Update, context: ContextTypes.DEFAULT_TYPE):
         raw = True
         user_prompt = user_prompt.replace("-raw ","")
 
-    print(f'User ({update.message.from_user.first_name}) requested: "{user_prompt}"')
+    prompt_message = f'User ({update.message.from_user.first_name}) requested: "{user_prompt}"'
+    print(prompt_message)
+    with open('history.txt', 'a') as file:
+        file.write(prompt_message + "\n")
+
     if raw:
         user_prompt = "I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS:" + user_prompt
+
     dalle_response = get_image(user_prompt)
     image_url = dalle_response['data'][0]['url']
     revised_prompt = dalle_response['data'][0]['revised_prompt'] if all else ""
