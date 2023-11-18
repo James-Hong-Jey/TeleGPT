@@ -82,7 +82,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username: str = update.message.from_user.username
     allowed_usernames = ["jeysiao", "yuyufrog"]
     if username not in allowed_usernames:
-        await update.message.reply_text("Unauthorised User")
         return
 
     # Check if user is in group or private message
